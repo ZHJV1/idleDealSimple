@@ -1,0 +1,158 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>商品管理</title>
+</head>
+<body>
+
+
+<h1 style="text-align: center">
+    购买商品管理
+</h1>
+<div style="height: 50px"></div>
+<div id="test"></div>
+<script type="text/JavaScript">
+    $(document).ready(function () {
+        $("#table").hide();
+        var str2 = window.location.href;
+        var dataArr = str2.split("?")[1].split("&");
+        var userId = dataArr[1].split("=")[1];
+        allData(userId);
+        $("body").on('click', ".delete", function () {
+            var $this = $(this);
+            var id = $this.attr("data-a");
+            var name = $this.attr("data-name");
+            if (!confirm("确认要删除"+name+"吗")) {
+                return;
+            } else {
+                const query = Bmob.Query('Order');
+                query.destroy(id).then(res => {
+                    if (res.msg == 'ok') {
+                        allData(userId)
+                    }
+                }).catch(err => {
+                    console.log(err)
+                })
+            }
+        });
+        $("body").on("click", "#cancel", function () {
+            allData(userId);
+        });
+    })
+
+    function allData(userId) {
+        Bmob.initialize("accf5f301fa038e5168c659f3fd3ede8", "d11a4bd10d49e81b1675aa3855576c6f", "e8cbe4eeba0b804d854408cb6c39b365");
+
+        var dataArr = [];
+            const query = Bmob.Query("Order");
+            query.equalTo("buyerId", "==", userId);
+            query.find().then(res => {
+                var len = res.length
+                console.log("dar>>>>",res);
+                if (len > 0) {
+                    for (var i = 0; i < len; i++) {
+                        dataArr.push(res[i])
+                    }
+                    var tmpltxt = doT.template(document.getElementById("dataTemp").innerHTML);//生成模板方法
+                    document.getElementById("test").innerHTML = tmpltxt(dataArr);//数据渲染
+                }
+            });
+    }
+</script>
+<script type="text/x-dot-template" id="dataTemp">
+    <!--<div id="table">-->
+    <div class="container" id="itemList">
+        <div class=" " style="background: none;">
+            <div class="panel-body " style="width: 100%; ">
+                <table id="table-javascript"
+                       class="table table-hover table-responsive table-bordered table-condensed ">
+                    <thead>
+                    <th style="text-align: center; width: auto;  ">
+                        <div class="th-inner ">发布用户ID</div>
+                    </th>
+                    <th style="text-align: center; width: 100px;  ">
+                        <div class="th-inner ">图片</div>
+                    </th>
+                    <th style="text-align: center; width: auto;  ">
+                        <div class="th-inner ">商品名称</div>
+                    </th>
+                    <th style="text-align: center; width: auto; ">
+                        <div class="th-inner ">价格</div>
+                    </th>
+                    <th style="text-align: center; width: auto;">
+                        <div class="th-inner ">收货地址</div>
+                    </th>
+                    <th style="text-align: center; width: auto; ">
+                        <div class="th-inner ">下单时间</div>
+                    </th>
+                    <th style="text-align: center; width: auto; ">
+                        <div class="th-inner ">操作</div>
+                    </th>
+                    </thead>
+                    <tbody>
+                    {{~it:value:index}}
+                    <tr>
+                        <td>{{=value.objectId}}</td>
+                        <td><img style="height: 100px;width: 100px" src={{=value.imageUrl}}></td>
+                        <td>{{=value.goodName}}</td>
+                        <td>{{=value.price}}</td>
+                        <td>{{=value.address}}</td>
+                        <td>{{=value.createdAt}}</td>
+                        <td>
+                            <a class="btn btn-warning btn-sm delete" href="#" data-a="{{=value.objectId}}" data-name="{{=value.goodName}}">删除</a>
+                        </td>
+                    </tr>
+                    {{~}}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+        <!--</div>-->
+    </div>
+</script>
+<script type="text/x-dot-template" id="updateTemp">
+    <!--<div id="upd">-->
+    <form class="form-horizontal" role="form" aria-hidden="false">
+        <div class="form-group">
+            <label class="col-sm-2 control-label">图片</label>
+            <div class="col-sm-4">
+                <img style="height: 100px;width: 100px" src={{=it.imageUrls}}>
+            </div>
+        </div>
+        <div class="form-group">
+            <label for="title" class="col-sm-2 control-label">标题</label>
+            <div class="col-sm-4">
+                <input type="text" class="form-control" id="title" value="{{=it.title}}">
+            </div>
+        </div>
+        <div class="form-group">
+            <label for="detail" class="col-sm-2 control-label">详情</label>
+            <div class="col-sm-4">
+                <input type="text" class="form-control" id="detail" value="{{=it.detail}}">
+            </div>
+        </div>
+        <div class="form-group">
+            <label for="price" class="col-sm-2 control-label">价格</label>
+            <div class="col-sm-4">
+                <input type="text" id="price" class="form-control" value="{{=it.price}}">
+            </div>
+        </div>
+        <div class="form-group">
+            <label for="location" class="col-sm-2 control-label">位置</label>
+            <div class="col-sm-4">
+                <input type="text" class="form-control" id="location" value="{{=it.location}}">
+            </div>
+        </div>
+
+        <div class="form-group">
+            <div class="col-sm-offset-2 col-sm-4">
+                <button type="button" id="save" value="{{=it.itemId}}" class="btn btn-save">保存</button>
+                <button type="button" id="cancel" class="btn btn-save">取消</button>
+            </div>
+        </div>
+    </form>
+    <!--</div>-->
+</script>
+</body>
+</html>

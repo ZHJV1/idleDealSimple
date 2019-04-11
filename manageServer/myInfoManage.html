@@ -1,0 +1,254 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="utf-8">
+    <title>我的信息管理</title>
+    <style type="text/css">
+        #uploadImg {
+            opacity: 0;
+            filter: alpha(opacity=0);
+            height: 100px;
+            width: 100px;
+            position: absolute;
+            top: 0;
+            z-index: 9;
+        }
+    </style>
+</head>
+
+<body>
+<h1 style="text-align: center">
+    我的信息管理
+</h1>
+<div style="height: 50px"></div>
+<div id="test"></div>
+<script>
+    var userId = "";
+    var username = "";
+    var email = "";
+    $(document).ready(function () {
+        var str2 = window.location.href;
+        var dataArr = str2.split("?")[1].split("&");
+        userId = dataArr[1].split("=")[1];
+        getData(userId);
+    })
+    Bmob.initialize("accf5f301fa038e5168c659f3fd3ede8", "d11a4bd10d49e81b1675aa3855576c6f", "e8cbe4eeba0b804d854408cb6c39b365");
+
+    function getData(userId) {
+        const query = Bmob.Query("_User");
+        query.equalTo("objectId", "==", userId);
+        query.find().then(res => {
+            if (res.length == 1) {
+                var tmpltxt = doT.template(document.getElementById("dataTemp").innerHTML);//生成模板方法
+                document.getElementById("test").innerHTML = tmpltxt(res[0]);//数据渲染
+            }
+        })
+
+        // Bmob.User.users().then(function (res) {
+        //     var userData = res.results;
+        //     if (userData.length > 0) {
+        //         for (var i in  userData) {
+        //             if (userData[i].objectId == userId) {
+        //                 username = userData[i].username;
+        //                 email = userData[i].email;
+        //                 var data = {
+        //                     username: username,
+        //                     email: email,
+        //                     createAt: userData[i].createdAt,
+        //                     updateAt: userData[i].updatedAt,
+        //                     objectId: userData[i].objectId
+        //                 }
+        //                 var tmpltxt = doT.template(document.getElementById("dataTemp").innerHTML);//生成模板方法
+        //                 document.getElementById("test").innerHTML = tmpltxt(data);//数据渲染
+        //                 break;
+        //             }
+        //         }
+        //     } else {
+        //         console.log("数据为空");
+        //     }
+        // })
+    }
+
+    $("body").on("click", "#update", function () {
+        var newName = $("#name").val().trim();
+        var newemail = $("#email").val().trim();
+        var olePass = $("#ole_pass").val().trim();
+        var newPass = $("#new_pass").val().trim();
+        var id = $(this).attr("data-id");
+        if (isUloadLogo == 1) {
+            alert("图片正在上传，请稍后...");
+            return;
+        } else {
+            var res = confirm("确定修改？");
+            if (res == true) {
+                var reg = new RegExp("^[a-z0-9]+([._\\-]*[a-z0-9])*@([a-z0-9]+[-a-z0-9]*[a-z0-9]+.){1,63}[a-z0-9]+$"); //正则表达式
+                if (!newemail || !newName) {
+                    alert("用户名或者邮箱不能为空！");
+                    return;
+                } else if (!reg.test(newemail)) {
+                    alert("邮箱格式不对，请重新输入");
+                    return;
+                } else {
+                    var isShow = $(".passSet").is(":visible");
+                    if (isShow) {
+                        if (!olePass || !newPass) {
+                            alert("输入的密码不能为空");
+                            return;
+                        }
+                        let objectId = id
+                        let data = {
+                            oldPassword: olePass,
+                            newPassword: newPass
+                        }
+                        Bmob.updateUserPassword(objectId, data).then(res => {
+                            if (res.msg == 'ok') {
+                                const query = Bmob.Query('_User');
+                                query.get(userId).then(res => {
+                                    res.set('username', newName);
+                                    res.set('email', newemail);
+                                    res.set('userAvatar', logo);
+                                    res.save().then(res => {
+                                        alert("修改成功")
+                                    }).catch(err => {
+                                        alert("错误：" + err.error)
+                                    })
+                                }).catch(err => {
+                                    alert("错误!" + err.error);
+                                })
+                            }
+                        }).catch(err => {
+                            alert("错误!" + err.error);
+                        })
+                    } else {
+                        const query = Bmob.Query('_User');
+                        query.get(userId).then(res => {
+                            res.set('username', newName);
+                            res.set('email', newemail);
+                            res.set('userAvatar', logo);
+                            res.save().then(res => {
+                                alert("修改成功")
+                            }).catch(err => {
+                                alert("错误：" + err.error)
+                            })
+                        }).catch(err => {
+                            alert("错误!" + err.error);
+                        })
+                    }
+                }
+            } else {
+                return;
+            }
+        }
+    })
+
+    $("body").on("click", "#reset_password", function () {
+        $(".passSet").show();
+        $(".passUpdate").hide();
+    })
+
+    $("body").on("click", "#re_password", function () {
+        var email = $(this).attr("data-email");
+        let data = {
+            email: email
+        }
+        console.log("emailData=>", data)
+        Bmob.requestPasswordReset(data).then(res => {
+            if (res.msg == 'ok') {
+                alert("重置密码的链接已经发送至您的邮箱");
+            }
+        }).catch(err => {
+            alert("错误：" + err);
+        })
+    })
+
+    var logo = ""
+    var isUloadLogo = 0;
+
+    function uploadFun() {
+        isUloadLogo = 1;
+        var fileUploadControl = document.getElementById("uploadImg");
+        const pic = fileUploadControl.files
+        let file
+        for (let item of pic) {
+            file = Bmob.File(item.name, item);
+        }
+        file.save().then(res => {
+            logo = res[0].url
+            isUloadLogo = 2;
+            console.log("result>>>>", logo)
+        })
+    }
+
+</script>
+<script type="text/x-dot-template" id="dataTemp">
+
+    <form class="form-horizontal" role="form">
+        <div class="form-group">
+            <label class="col-sm-2 control-label">头像</label>
+            <div class="col-sm-4">
+                <input type="file" id="uploadImg" multiple="multiple" onchange="uploadFun()">
+                <img src="{{=it.userAvatar}}" style="width: 100px;height: 100px">
+            </div>
+        </div>
+
+        <div class="form-group">
+            <label for="name" class="col-sm-2 control-label">用户名</label>
+            <div class="col-sm-4">
+                <input type="text" class="form-control" id="name" value="{{=it.username}}">
+            </div>
+        </div>
+
+        <div class="form-group passUpdate">
+            <label for="reset_password" class="col-sm-2 control-label">密码修改</label>
+            <div class="col-sm-4">
+                <a href="#" id="reset_password">在线重置密码</a>&nbsp &nbsp &nbsp
+
+                <a href="#" id="re_password" value="{{=it.email}}" data-email="{{=it.email}}">邮箱重置密码</a>
+            </div>
+        </div>
+
+        <div class="form-group passSet" style="display: none">
+            <label for="reset_password" class="col-sm-2 control-label">旧密码</label>
+            <div class="col-sm-4">
+                <input type="text" class="form-control" id="ole_pass">
+            </div>
+        </div>
+
+        <div class="form-group passSet" style="display: none">
+            <label for="reset_password" class="col-sm-2 control-label">新密码</label>
+            <div class="col-sm-4">
+                <input type="text" class="form-control" id="new_pass">
+            </div>
+        </div>
+
+        <div class="form-group">
+            <label for="email" class="col-sm-2 control-label">注册邮箱</label>
+            <div class="col-sm-4">
+                <input type="text" class="form-control" id="email" value="{{=it.email}}">
+            </div>
+        </div>
+
+        <div class="form-group">
+            <label for="createTime" class="col-sm-2 control-label">注册时间</label>
+            <div class="col-sm-4">
+                <input type="text" id="disabledInput" class="form-control" id="createTime" disabled
+                       value="{{=it.createdAt}}">
+            </div>
+        </div>
+
+        <div class="form-group">
+            <label for="updateTime" class="col-sm-2 control-label">最近更新时间</label>
+            <div class="col-sm-4">
+                <input type="text" class="form-control" id="updateTime" disabled value="{{=it.updatedAt}}">
+            </div>
+        </div>
+
+        <div class="form-group">
+            <div class="col-sm-offset-2 col-sm-4">
+                <button type="button" id="update" class="btn btn-save" data-id="{{=it.objectId}}">保存</button>
+            </div>
+        </div>
+    </form>
+</script>
+</body>
+</html>

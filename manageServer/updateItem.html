@@ -1,0 +1,112 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="utf-8">
+    <title>修改商品信息</title>
+    <script type="text/javascript" src="assets/js/Bmob-1.6.7.min.js"></script>
+    <link rel="stylesheet" href="assets/materialize/css/materialize.min.css" media="screen,projection"/>
+    <script src="assets/js/jquery-3.3.1.min.js"></script>
+    <script src="assets/js/bootstrap.min.js"></script>
+    <link rel="stylesheet" href="https://unpkg.com/bootstrap-table@1.14.1/dist/bootstrap-table.min.css">
+    <script src="assets/js/doT.min.js"></script>
+</head>
+<body>
+<h1 style="text-align: center">
+    我的信息管理
+</h1>
+<div style="height: 50px"></div>
+<div id="test" class="container"></div>
+
+<script>
+    var itemId = "";
+    $(document).ready(function () {
+        var str2 = window.location.href;
+        var dataArr = str2.split("?")[1];
+        itemId = dataArr.split("=")[1];
+        Bmob.initialize("accf5f301fa038e5168c659f3fd3ede8", "d11a4bd10d49e81b1675aa3855576c6f", "e8cbe4eeba0b804d854408cb6c39b365");
+
+        var queryItem = Bmob.Query('Post');
+        queryItem.get(itemId).then(res => {
+            var data = {
+                imageUrls: res.imageUrls[0],
+                detail: res.detail,
+                price: res.price,
+                title: res.title,
+                location: res.location
+            }
+            console.log("data>>>>>>>>>>>>>>>>>>>>>>>>", data);
+            var tmpltxt = doT.template(document.getElementById("dataTemp").innerHTML);//生成模板方法
+            document.getElementById("test").innerHTML = tmpltxt(data);//数据渲染
+        }).catch(err => {
+            console.log(err)
+        })
+    })
+    $("body").on("click", "#update", function () {
+        var title = $("#title").val();
+        var detail = $("#detail").val();
+        var price = $("#price").val();
+        var location = $("#location").val();
+        if (!title && !detail && !price && !location) {
+            alert("必填写项不能为空！");
+            return;
+        } else {
+            var res = confirm("确定修改？");
+            const query = Bmob.Query('_User');
+            query.get(userId).then(res => {
+                res.set('username', newName);
+                res.set('email', newemail);
+                res.save().then(res => {
+                    alert("修改成功")
+                }).catch(err => {
+                    alert("错误：" + err.error)
+                })
+            }).catch(err => {
+                alert("错误!" + err.error);
+            })
+        }
+    })
+</script>
+<script type="text/x-dot-template" id="dataTemp">
+    <form class="form-horizontal" role="form">
+        <div class="form-group">
+            <label for="title" class="col-sm-2 control-label">标题</label>
+            <div class="col-sm-4">
+                <input type="text" class="form-control" id="title" value="{{=it.title}}">
+            </div>
+        </div>
+        <div class="form-group">
+            <label class="col-sm-2 control-label">图片</label>
+            <div class="col-sm-4">
+                <img style="width: 100px;height: 100px" src="{{=it.imageUrls}}">
+            </div>
+        </div>
+
+        <div class="form-group">
+            <label for="detail" class="col-sm-2 control-label">详情</label>
+            <div class="col-sm-4">
+                <input type="text" class="form-control" id="detail" value="{{=it.detail}}">
+            </div>
+        </div>
+        <div class="form-group">
+            <label for="price" class="col-sm-2 control-label">价格</label>
+            <div class="col-sm-4">
+                <input type="text" class="form-control" id="price"
+                       value="{{=it.price}}">
+            </div>
+        </div>
+        <div class="form-group">
+            <label for="location" class="col-sm-2 control-label">位置</label>
+            <div class="col-sm-4">
+                <input type="text" class="form-control" id="location"
+                       value="{{=it.location}}">
+            </div>
+        </div>
+        <div class="form-group">
+            <div class="col-sm-offset-2 col-sm-4">
+                <button type="button" id="update" class="btn btn-save">确认修改</button>
+            </div>
+        </div>
+    </form>
+</script>
+</body>
+</html>

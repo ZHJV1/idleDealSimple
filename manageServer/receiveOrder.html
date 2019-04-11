@@ -1,0 +1,193 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>商品管理</title>
+</head>
+<body>
+
+
+<h1 style="text-align: center">
+    收到订单管理
+</h1>
+<div style="height: 50px"></div>
+<div id="test"></div>
+<script type="text/JavaScript">
+    $(document).ready(function () {
+        $("#table").hide();
+        var str2 = window.location.href;
+        var dataArr = str2.split("?")[1].split("&");
+        var userId = dataArr[1].split("=")[1];
+        allData(userId);
+    })
+
+    $("body").on('click', ".update", function () {
+        var $this = $(this);
+        var itemId = $this.attr("data-a");
+        var queryItem = Bmob.Query('Order');
+        queryItem.get(itemId).then(res => {
+            var tmpltxt = doT.template(document.getElementById("updateTemp").innerHTML);//生成模板方法
+            document.getElementById("test").innerHTML = tmpltxt(res);//数据渲染
+        }).catch(err => {
+            console.log(err)
+        })
+    });
+
+    $("body").on("click", "#save", function () {
+        var goodName = $("#goodName").val();
+        var objectId = $("#save").val();
+        var price = $("#price").val();
+        var address = $("#address").val();
+        var sellerId = $(this).attr("data-sell");
+        const upd = Bmob.Query('Order');
+        console.log("da>>>>>>>>>>>>>>>>",objectId,"2222222222",sellerId);
+        upd.get(objectId).then(res => {
+            res.set('goodName', goodName);
+            res.set('price', price);
+            res.set('address', address);
+            res.save().then(res => {
+                alert("修改成功");
+                allData(sellerId);
+            }).catch(err => {
+                alert("错误：1" + err.error)
+            })
+        }).catch(err => {
+            alert("错误：2" + err.error);
+        })
+    })
+
+    $("body").on("click", "#cancel", function () {
+        allData(userId);
+    });
+
+    $("body").on('click', ".delete", function () {
+        var $this = $(this);
+        var id = $this.attr("data-a");
+        var name = $this.attr("data-name");
+        var sellerId = $this.attr("data-sellerId");
+        if (!confirm("确认要删除" + name + "吗")) {
+            return;
+        } else {
+            allData(sellerId);
+            const query = Bmob.Query('Order');
+            query.destroy(id).then(res => {
+                if (res.msg == 'ok') {
+                    alert("刪除成功！")
+                    allData(sellerId)
+                }
+            }).catch(err => {
+                console.log(err)
+            })
+        }
+    });
+
+    function allData(userId) {
+        Bmob.initialize("accf5f301fa038e5168c659f3fd3ede8", "d11a4bd10d49e81b1675aa3855576c6f", "e8cbe4eeba0b804d854408cb6c39b365");
+        var dataArr = [];
+        const query = Bmob.Query("Order");
+        query.equalTo("sellerId", "==", userId);
+        query.find().then(res => {
+            var len = res.length
+            if (len > 0) {
+                for (var i = 0; i < len; i++) {
+                    dataArr.push(res[i])
+                }
+                var tmpltxt = doT.template(document.getElementById("dataTemp").innerHTML);//生成模板方法
+                document.getElementById("test").innerHTML = tmpltxt(dataArr);//数据渲染
+            }
+        });
+    }
+</script>
+<script type="text/x-dot-template" id="dataTemp">
+    <!--<div id="table">-->
+    <div class="container" id="itemList">
+        <div class=" " style="background: none;">
+            <div class="panel-body " style="width: 100%; ">
+                <table id="table-javascript"
+                       class="table table-hover table-responsive table-bordered table-condensed ">
+                    <thead>
+                    <th style="text-align: center; width: auto;  ">
+                        <div class="th-inner ">下单用户ID</div>
+                    </th>
+                    <th style="text-align: center; width: 100px;  ">
+                        <div class="th-inner ">图片</div>
+                    </th>
+                    <th style="text-align: center; width: auto;  ">
+                        <div class="th-inner ">商品名称</div>
+                    </th>
+                    <th style="text-align: center; width: auto; ">
+                        <div class="th-inner ">价格</div>
+                    </th>
+                    <th style="text-align: center; width: auto;">
+                        <div class="th-inner ">收货地址</div>
+                    </th>
+                    <th style="text-align: center; width: auto; ">
+                        <div class="th-inner ">下单时间</div>
+                    </th>
+                    <th style="text-align: center; width: auto; ">
+                        <div class="th-inner ">操作</div>
+                    </th>
+                    </thead>
+                    <tbody>
+                    {{~it:value:index}}
+                    <tr>
+                        <td>{{=value.buyerId}}</td>
+                        <td><img style="height: 100px;width: 100px" src={{=value.imageUrl}}></td>
+                        <td>{{=value.goodName}}</td>
+                        <td>{{=value.price}}</td>
+                        <td>{{=value.address}}</td>
+                        <td>{{=value.createdAt}}</td>
+                        <td>
+                            <a class="btn btn-save btn-sm update" href="#" data-a="{{=value.objectId}}">修改</a>
+                            <a class="btn btn-warning btn-sm delete" href="#" data-a="{{=value.objectId}}"
+                               data-name="{{=value.goodName}}" data-sellerId="{{=value.sellerId}}">删除</a>
+                        </td>
+                    </tr>
+                    {{~}}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+        <!--</div>-->
+    </div>
+</script>
+<script type="text/x-dot-template" id="updateTemp">
+    <!--<div id="upd">-->
+    <form class="form-horizontal" role="form" aria-hidden="false">
+        <div class="form-group">
+            <label class="col-sm-2 control-label">图片</label>
+            <div class="col-sm-4">
+                <img style="height: 100px;width: 100px" src={{=it.imageUrl}}>
+            </div>
+        </div>
+        <div class="form-group">
+            <label for="goodName" class="col-sm-2 control-label">商品名称</label>
+            <div class="col-sm-4">
+                <input type="text" class="form-control" id="goodName" value="{{=it.goodName}}">
+            </div>
+        </div>
+        <div class="form-group">
+            <label for="price" class="col-sm-2 control-label">价格</label>
+            <div class="col-sm-4">
+                <input type="text" id="price" class="form-control" value="{{=it.price}}">
+            </div>
+        </div>
+        <div class="form-group">
+            <label for="address" class="col-sm-2 control-label">收货地址</label>
+            <div class="col-sm-4">
+                <input type="text" class="form-control" id="address" value="{{=it.address}}">
+            </div>
+        </div>
+        <div class="form-group">
+            <div class="col-sm-offset-2 col-sm-4">
+                <button type="button" id="save" data-sell="{{=it.sellerId}}" value="{{=it.objectId}}"
+                        class="btn btn-save">保存
+                </button>
+                <button type="button" id="cancel" class="btn btn-save">取消</button>
+            </div>
+        </div>
+    </form>
+    <!--</div>-->
+</script>
+</body>
+</html>

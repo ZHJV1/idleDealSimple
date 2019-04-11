@@ -1,0 +1,257 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>商品管理</title>
+</head>
+<body>
+
+
+<h1 style="text-align: center">
+    商品管理
+</h1>
+<div style="height: 50px"></div>
+<div id="test"></div>
+<script type="text/JavaScript">
+    // var userId="xxx";
+    // var role="zzzz";
+    //
+    $(document).ready(function () {
+        $("#table").hide();
+        var str2 = window.location.href;
+        var dataArr = str2.split("?")[1].split("&");
+        var userId = dataArr[1].split("=")[1];
+        var role = dataArr[0].split("=")[1];
+        allData(userId, role);
+        $("body").on('click', ".delete", function () {
+            var $this = $(this);
+            var id = $this.attr("data-a");
+            if (!confirm("确认要删除吗" + id)) {
+                return;
+            } else {
+                const query = Bmob.Query('Post');
+                query.destroy(id).then(res => {
+                    if (res.msg == 'ok') {
+                        allData(userId,role);
+                    }
+                }).catch(err => {
+                    alert("错误：",err)
+                })
+            }
+        });
+        $("body").on('click', ".update", function () {
+            var $this = $(this);
+            var itemId = $this.attr("data-a");
+            var queryItem = Bmob.Query('Post');
+            queryItem.get(itemId).then(res => {
+                var data = {
+                    itemId: itemId,
+                    imageUrls: res.imageUrls[0],
+                    detail: res.detail,
+                    price: res.price,
+                    title: res.title,
+                    location: res.location
+                }
+                var tmpltxt = doT.template(document.getElementById("updateTemp").innerHTML);//生成模板方法
+                document.getElementById("test").innerHTML = tmpltxt(data);//数据渲染
+            }).catch(err => {
+                console.log(err)
+            })
+        });
+        $("body").on("click", "#cancel", function () {
+            allData(userId, role);
+        });
+        $("body").on("click", "#save", function () {
+            var title = $("#title").val();
+            var detail = $("#detail").val();
+            var price = $("#price").val();
+            var location = $("#location").val();
+            var itemId = $("#save").val();
+            const upd = Bmob.Query('Post');
+            upd.get(itemId).then(res => {
+                res.set('title', title);
+                res.set('detail', detail);
+                res.set('price', price);
+                res.set('location', location);
+                res.save().then(res => {
+                    alert("修改成功");
+                    allData(userId, role)
+                }).catch(err => {
+                    alert("错误：1" + err.error)
+                })
+            }).catch(err => {
+                alert("错误：2" + err.error);
+            })
+        })
+    })
+
+    function allData(userId, role) {
+        Bmob.initialize("accf5f301fa038e5168c659f3fd3ede8", "d11a4bd10d49e81b1675aa3855576c6f", "e8cbe4eeba0b804d854408cb6c39b365");
+
+        var dataArr = [];
+        if (role == 'U') {
+            const query = Bmob.Query("Post");
+            query.equalTo("author", "==", userId);
+            query.find().then(res => {
+                var len = res.length
+                console.log("res>>>>>>>>>>>>>>>>",res);
+                if (len > 0) {
+                    for (var i = 0; i < len; i++) {
+                        dataArr.push(res[i])
+                    }
+                    var tmpltxt = doT.template(document.getElementById("dataTemp").innerHTML);//生成模板方法
+                    document.getElementById("test").innerHTML = tmpltxt(dataArr);//数据渲染
+                }
+            });
+        } else if (role == 'M') {
+            var fin = Bmob.Query("Post");
+            fin.find().then(res => {
+                if (res.length > 0) {
+                    for (var i = 0; i < res.length; i++) {
+                        dataArr.push(res[i])
+                    }
+                    console.log(">>>>>>>>>>>>>>",res)
+                    var tmpltxt = doT.template(document.getElementById("dataTemp").innerHTML);//生成模板方法
+                    document.getElementById("test").innerHTML = tmpltxt(dataArr);//数据渲染
+                }
+            })
+        }
+    }
+
+    //查找
+    $("body").on("click","#search",function () {
+        var key=$("#keyword").val();
+        var keyword=key.trim();
+        if(!keyword){
+            allData("xxxx","M");
+            return;
+        }
+        const search = Bmob.Query("Post");
+        const query1 = search.equalTo("author", '===', keyword);
+        const query2 = search.equalTo("title", '===', keyword);
+        const query3 = search.equalTo("detail", '===', keyword);
+        search.or(query1, query2,query3);
+        search.find().then(res => {
+            if(res.length>=1){
+                var searchData=[];
+                for(var i=0;i<res.length;i++){
+                    searchData.push(res[i])
+                }
+                var tmpltxt = doT.template(document.getElementById("dataTemp").innerHTML);//生成模板方法
+                document.getElementById("test").innerHTML = tmpltxt(searchData);//数据渲染
+            }else if (res.length==0) {
+                alert("查找不到该数据");
+                allData("xxxx","M");
+            }
+        })
+    })
+</script>
+<script type="text/x-dot-template" id="dataTemp">
+    <!--<div id="table">-->
+    <div class="container" id="itemList">
+        <div >
+            <div class="form-group">
+                <div class="col-sm-4">
+                    <input type="text" class="form-control" id="keyword" placeholder="发布用户ID、商品的标题、详情">
+                </div>
+                <a class="btn btn-success btn-sm " id="search" href="#" >查找</a>
+            </div>
+        </div>
+        <div class=" " style="background: none;">
+            <div class="panel-body " style="width: 100%; ">
+                <table id="table-javascript"
+                       class="table table-hover table-responsive table-bordered table-condensed ">
+                    <thead>
+                    <th style="text-align: center; width: 100px;  ">
+                        <div class="th-inner ">发布用户ID</div>
+                    </th>
+                    <th style="text-align: center; width: 100px;  ">
+                        <div class="th-inner ">图片</div>
+                    </th>
+                    <th style="text-align: center; width: 180px;  ">
+                        <div class="th-inner ">标题</div>
+                    </th>
+                    <th style="text-align: center; width: 350px; ">
+                        <div class="th-inner ">详情</div>
+                    </th>
+                    <th style="text-align: center; width: 80px; ">
+                        <div class="th-inner ">价格</div>
+                    </th>
+                    <th style="text-align: center; width: 180px;">
+                        <div class="th-inner ">位置</div>
+                    </th>
+                    <th style="text-align: center; width: 180px; ">
+                        <div class="th-inner ">发布时间</div>
+                    </th>
+                    <th style="text-align: center; width: 180px; ">
+                        <div class="th-inner ">操作</div>
+                    </th>
+                    </thead>
+                    <tbody>
+                    {{~it:value:index}}
+                    <tr>
+                        <td>{{=value.author.objectId}}</td>
+                        <td><img style="height: 100px;width: 100px" src={{=value.imageUrls[0]}}></td>
+                        <td>{{=value.title}}</td>
+                        <td>{{=value.detail}}</td>
+                        <td>{{=value.price}}</td>
+                        <td>{{=value.location}}</td>
+                        <td>{{=value.createdAt}}</td>
+                        <td>
+                            <a class="btn btn-success btn-sm update" href="#" data-a="{{=value.objectId}}">修改</a>
+                            <a class="btn btn-warning btn-sm delete" href="#" data-a="{{=value.objectId}}">删除</a>
+                        </td>
+                    </tr>
+                    {{~}}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+        <!--</div>-->
+    </div>
+</script>
+<script type="text/x-dot-template" id="updateTemp">
+    <!--<div id="upd">-->
+    <form class="form-horizontal" role="form" aria-hidden="false">
+        <div class="form-group">
+            <label class="col-sm-2 control-label">图片</label>
+            <div class="col-sm-4">
+                <img style="height: 100px;width: 100px" src={{=it.imageUrls}}>
+            </div>
+        </div>
+        <div class="form-group">
+            <label for="title" class="col-sm-2 control-label">标题</label>
+            <div class="col-sm-4">
+                <input type="text" class="form-control" id="title" value="{{=it.title}}">
+            </div>
+        </div>
+        <div class="form-group">
+            <label for="detail" class="col-sm-2 control-label">详情</label>
+            <div class="col-sm-4">
+                <input type="text" class="form-control" id="detail" value="{{=it.detail}}">
+            </div>
+        </div>
+        <div class="form-group">
+            <label for="price" class="col-sm-2 control-label">价格</label>
+            <div class="col-sm-4">
+                <input type="text" id="price" class="form-control" value="{{=it.price}}">
+            </div>
+        </div>
+        <div class="form-group">
+            <label for="location" class="col-sm-2 control-label">位置</label>
+            <div class="col-sm-4">
+                <input type="text" class="form-control" id="location" value="{{=it.location}}">
+            </div>
+        </div>
+
+        <div class="form-group">
+            <div class="col-sm-offset-2 col-sm-4">
+                <button type="button" id="save" value="{{=it.itemId}}" class="btn btn-save">保存</button>
+                <button type="button" id="cancel" class="btn btn-save">取消</button>
+            </div>
+        </div>
+    </form>
+    <!--</div>-->
+</script>
+</body>
+</html>
